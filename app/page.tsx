@@ -78,7 +78,7 @@ const QUESTIONS: Question[] = [
     answers: [
       { text: "Get excited and start building a rough version immediately", type: "slop" },
       { text: "Start mentally mapping everything that could go wrong", type: "infra" },
-      { text: "Hype it up in the thread. Energy matters", type: "hot" },
+      { text: "Mute the channel and go back to whatever you were doing", type: "hot" },
       { text: "Sleep on it and send a measured take in the morning", type: "grown" },
     ],
   },
@@ -378,7 +378,7 @@ export default function Quiz() {
     setPhase("intro");
   }, []);
 
-  const getResult = useCallback(() => {
+  const result = useMemo(() => {
     const max = Math.max(...Object.values(scores));
     const winners = (Object.entries(scores) as [Archetype, number][]).filter(([, v]) => v === max);
     const winner = winners.length > 1
@@ -388,17 +388,16 @@ export default function Quiz() {
   }, [scores]);
 
   const copyResults = useCallback(() => {
-    const { winner, isTie, tiedWith } = getResult();
-    const info = ARCHETYPE_INFO[winner];
+    const info = ARCHETYPE_INFO[result.winner];
     const total = Object.values(scores).reduce((a, b) => a + b, 0);
     const breakdown = (Object.entries(scores) as [Archetype, number][])
       .sort((a, b) => b[1] - a[1])
       .map(([t, c]) => `${ARCHETYPE_INFO[t].name}: ${Math.round((c / total) * 100)}%`)
       .join("\n");
-    const tieNote = isTie
-      ? `\n(Tied with ${tiedWith.filter((t) => t !== winner).map((t) => ARCHETYPE_INFO[t].name).join(" & ")})`
+    const tieNote = result.isTie
+      ? `\n(Tied with ${result.tiedWith.filter((t) => t !== result.winner).map((t) => ARCHETYPE_INFO[t].name).join(" & ")})`
       : "";
-    const text = `From Now On There Are Only 4 Jobs\n\nI got: ${info.name}${tieNote}\n\n${breakdown}`;
+    const text = `I just took "The Only 4 Jobs That Will Survive at Tech Companies" quiz and got: ${info.name}${tieNote}\n\n${breakdown}\n\nTake the quiz: ${window.location.origin}`;
     navigator.clipboard.writeText(text).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
@@ -414,7 +413,7 @@ export default function Quiz() {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     });
-  }, [getResult, scores]);
+  }, [result, scores]);
 
   // ─── Intro Screen ──────────────────────────────────────────────────────────
 
@@ -428,9 +427,9 @@ export default function Quiz() {
               className="text-[clamp(2rem,6vw,3.5rem)] leading-[1.05] tracking-[-0.03em] mb-6 animate-fade-up"
               style={{ fontFamily: "'DM Serif Display', serif", animationDelay: '100ms', animationFillMode: 'both' }}
             >
-              From Now On<br />
-              There Are Only<br />
-              <span style={{ fontStyle: 'italic' }}>4 Jobs</span>
+              The Only <span style={{ fontStyle: 'italic' }}>4 Jobs</span><br />
+              That Will Survive<br />
+              at Tech Companies
             </h1>
 
             <p
@@ -473,7 +472,7 @@ export default function Quiz() {
   // ─── Result Screen ─────────────────────────────────────────────────────────
 
   if (phase === "result") {
-    const { winner, isTie, tiedWith } = getResult();
+    const { winner, isTie, tiedWith } = result;
     const info = ARCHETYPE_INFO[winner];
 
     return (

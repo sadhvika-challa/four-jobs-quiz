@@ -15,7 +15,7 @@ const dmSerif = DM_Serif_Display({
 });
 
 export const metadata: Metadata = {
-  title: "From Now On There Are Only 4 Jobs",
+  title: "The Only 4 Jobs That Will Survive at Tech Companies",
   description: "A very serious personality quiz to determine your one true role.",
 };
 
