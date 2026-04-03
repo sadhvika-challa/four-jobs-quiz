@@ -247,15 +247,9 @@ function AnswerCard({
   onSelect: () => void;
   selected: boolean;
 }) {
-  const info = ARCHETYPE_INFO[answer.type];
-  const [hovered, setHovered] = useState(false);
-  const active = selected || hovered;
-
   return (
     <button
       onClick={onSelect}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
       className="w-full text-left cursor-pointer relative animate-fade-up"
       style={{
         WebkitTapHighlightColor: 'transparent',
@@ -267,15 +261,15 @@ function AnswerCard({
         className="relative overflow-hidden transition-all duration-200"
         style={{
           padding: '18px 20px',
-          background: active ? info.color : 'var(--card-bg)',
+          background: 'var(--card-bg)',
           backdropFilter: 'blur(20px)',
           WebkitBackdropFilter: 'blur(20px)',
-          border: `1px solid ${active ? info.color : 'var(--card-border)'}`,
+          border: `1px solid var(--card-border)`,
         }}
       >
         <span
-          className="text-[15px] leading-relaxed transition-colors duration-200"
-          style={{ color: active ? '#fff' : 'var(--foreground)' }}
+          className="text-[15px] leading-relaxed"
+          style={{ color: 'var(--foreground)' }}
         >
           {answer.text}
         </span>
@@ -480,22 +474,6 @@ export default function Quiz() {
         <ColorField colors={[info.color, info.color, info.color, '#FFD600', '#ffffff']} seed={99} />
         <div className="flex-1 flex items-center justify-center px-6 py-12 relative" style={{ zIndex: 1 }}>
           <div className="text-center max-w-lg w-full flex flex-col items-center">
-            {/* Large color block */}
-            <div
-              className="mb-6 relative animate-scale-in"
-              style={{ animationDelay: '100ms', animationFillMode: 'both' }}
-            >
-              <div style={{ width: 80, height: 80, backgroundColor: info.color }} />
-              <div style={{
-                position: 'absolute',
-                inset: -10,
-                background: info.color,
-                filter: 'blur(25px)',
-                opacity: 0.4,
-                zIndex: -1,
-              }} />
-            </div>
-
             <p
               className="text-xs tracking-[0.25em] uppercase mb-3 font-medium animate-fade-up"
               style={{ color: 'var(--muted)', animationDelay: '200ms', animationFillMode: 'both' }}
