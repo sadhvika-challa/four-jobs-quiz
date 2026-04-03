@@ -254,7 +254,7 @@ function generateResultImage(
   });
   const breakdownH = archetypeBlocks.reduce((h, b) => h + 22 + b.lines.length * 16 + 16, 0);
   const barSectionH = sorted.length * 36;
-  const contentH = 40 + 28 + 56 + (isTie ? 28 : 0) + 20 + descLines.length * 21
+  const contentH = 40 + 28 + 60 + (isTie ? 36 : 0) + 20 + descLines.length * 21
     + 28 + barSectionH + 20 + 1 + 20 + breakdownH + 4 + 18 + 18;
   const topPad = Math.max(40, Math.floor((H - contentH) / 2));
 
@@ -303,9 +303,10 @@ function generateResultImage(
   ctx.font = '44px "DM Serif Display", Georgia, serif';
   ctx.fillStyle = info.color;
   ctx.fillText(info.name, W / 2, y + 40);
-  y += 56;
+  y += 60;
 
   if (isTie) {
+    y += 8;
     ctx.font = '10px "Special Elite", "Courier New", monospace';
     ctx.fillStyle = "#888";
     ctx.letterSpacing = "2px";
@@ -714,7 +715,9 @@ export default function Quiz() {
     const file = new File([blob], "quiz-result.png", { type: "image/png" });
     const linkText = "Take the quiz: https://four-jobs-quiz.vercel.app";
 
-    const canShare = typeof navigator.share === "function"
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    const canShare = isMobile
+      && typeof navigator.share === "function"
       && typeof navigator.canShare === "function"
       && navigator.canShare({ files: [file] });
 
@@ -732,22 +735,22 @@ export default function Quiz() {
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
-
-      try {
-        await navigator.clipboard.write([
-          new ClipboardItem({
-            "image/png": blob,
-            "text/plain": new Blob([linkText], { type: "text/plain" }),
-          }),
-        ]);
-      } catch {
-        try {
-          await navigator.clipboard.writeText(linkText);
-        } catch {
-          // fallback: download still works
-        }
-      }
       setTimeout(() => URL.revokeObjectURL(url), 3000);
+    }
+
+    try {
+      await navigator.clipboard.write([
+        new ClipboardItem({
+          "image/png": blob,
+          "text/plain": new Blob([linkText], { type: "text/plain" }),
+        }),
+      ]);
+    } catch {
+      try {
+        await navigator.clipboard.writeText(linkText);
+      } catch {
+        // clipboard not available
+      }
     }
 
     setCopied(true);
