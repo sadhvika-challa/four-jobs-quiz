@@ -711,36 +711,47 @@ export default function Quiz() {
   const copyResults = useCallback(async () => {
     const { winner, isTie, tiedWith } = result;
     const blob = await generateResultImage(winner, isTie, tiedWith, scores);
-
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "quiz-result.png";
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-
+    const file = new File([blob], "quiz-result.png", { type: "image/png" });
     const linkText = "Take the quiz: https://four-jobs-quiz.vercel.app";
-    try {
-      await navigator.clipboard.write([
-        new ClipboardItem({
-          "image/png": blob,
-          "text/plain": new Blob([linkText], { type: "text/plain" }),
-        }),
-      ]);
-    } catch {
+
+    const canShare = typeof navigator.share === "function"
+      && typeof navigator.canShare === "function"
+      && navigator.canShare({ files: [file] });
+
+    if (canShare) {
       try {
-        await navigator.clipboard.writeText(linkText);
+        await navigator.share({ files: [file], text: linkText });
       } catch {
-        // fallback: download still works
+        // user cancelled the share sheet
       }
+    } else {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "quiz-result.png";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+
+      try {
+        await navigator.clipboard.write([
+          new ClipboardItem({
+            "image/png": blob,
+            "text/plain": new Blob([linkText], { type: "text/plain" }),
+          }),
+        ]);
+      } catch {
+        try {
+          await navigator.clipboard.writeText(linkText);
+        } catch {
+          // fallback: download still works
+        }
+      }
+      setTimeout(() => URL.revokeObjectURL(url), 3000);
     }
 
     setCopied(true);
-    setTimeout(() => {
-      setCopied(false);
-      URL.revokeObjectURL(url);
-    }, 2500);
+    setTimeout(() => setCopied(false), 2500);
   }, [result, scores]);
 
   // ─── Intro Screen ──────────────────────────────────────────────────────────
