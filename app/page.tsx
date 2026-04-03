@@ -113,33 +113,287 @@ const QUESTIONS: Question[] = [
 
 const ARCHETYPE_INFO: Record<
   Archetype,
-  { name: string; color: string; description: string }
+  { name: string; article: string; color: string; description: string }
 > = {
   slop: {
     name: "Slop Cannon",
+    article: "a",
     color: "#FF6B2B",
     description:
       "You are a force of nature. You ship at mass and ask questions later. Your terminal is always open, your PRs are always pending, and your side projects have side projects. You don\u2019t wait for permission. You wait for forgiveness.",
   },
   infra: {
     name: "Security",
+    article: "",
     color: "#00B4D8",
     description:
       "You are the reason things don\u2019t fall apart. While everyone else is shipping fast and breaking things, you\u2019re the one quietly making sure \u201Cthings\u201D still exist to break. You read postmortems for fun and your monitoring dashboards are a work of art.",
   },
   hot: {
     name: "Hot People",
+    article: "",
     color: "#E91E8C",
     description:
       "You are the human API. Customers love you, coworkers gravitate toward you, and somehow you make even a standup feel fun. Your superpower is making complex things feel simple and hard conversations feel easy. There are many ways to be hot, and you found yours.",
   },
   grown: {
     name: "Grown Ups",
+    article: "the",
     color: "#7B61FF",
     description:
       "You are the ballast on a rocketship. When everyone else is moving fast, you\u2019re the one asking \u201Cbut should we?\u201D and being right about it 80% of the time. You\u2019ve prevented more disasters than anyone will ever know, and your spreadsheets have spreadsheets.",
   },
 };
+
+const TIERED_DESCRIPTIONS: Record<Archetype, { high: string; mid: string; low: string }> = {
+  slop: {
+    high: "This is your dominant energy. You ship at mass and ask questions later. Your terminal is always open, your PRs are always pending, and your side projects have side projects. You don\u2019t wait for permission\u2014you wait for forgiveness.",
+    mid: "You\u2019ve got real Slop Cannon tendencies. You\u2019re not always the first to ship, but when you do, you move fast and figure out the details later. There\u2019s a builder in you that comes out when nobody\u2019s watching.",
+    low: "You\u2019re not really a Slop Cannon, and honestly that\u2019s probably fine. You prefer to think before you ship, and \u201Cmove fast and break things\u201D sounds more like a threat than a motto to you.",
+  },
+  infra: {
+    high: "This is your core identity. While everyone else is shipping and breaking things, you\u2019re the one quietly making sure \u201Cthings\u201D still exist to break. You read postmortems for fun and your monitoring dashboards are a work of art.",
+    mid: "You\u2019ve got some Security in you. You care about reliability more than most people, and you\u2019ve definitely been the one to ask \u201Cbut what happens if this goes down?\u201D at least once in a meeting.",
+    low: "Security isn\u2019t really your lane. You trust that someone else is keeping the lights on, and you\u2019d rather build the new thing than maintain the old one. The monitoring dashboard? You\u2019ve seen it once, maybe.",
+  },
+  hot: {
+    high: "This is your superpower. Customers love you, coworkers gravitate toward you, and somehow you make even a standup feel fun. You make complex things feel simple and hard conversations feel easy. There are many ways to be hot, and you found yours.",
+    mid: "You\u2019ve got some Hot People energy. You\u2019re not always the center of the room, but people genuinely like working with you, and you\u2019ve smoothed over more awkward situations than you probably realize.",
+    low: "Hot People is not your vibe, and you know it. You\u2019d rather let your work speak for itself than be the one running the meeting or charming the client. Social energy is finite and you spend yours wisely.",
+  },
+  grown: {
+    high: "This is your defining trait. When everyone else is moving fast, you\u2019re the one asking \u201Cbut should we?\u201D and being right about it 80% of the time. You\u2019ve prevented more disasters than anyone will ever know, and your spreadsheets have spreadsheets.",
+    mid: "There\u2019s a Grown Up in you trying to get out. You don\u2019t always play it safe, but you\u2019ve got a practical streak that kicks in when things get real. You\u2019ve caught at least one near-disaster by asking the right question.",
+    low: "Grown Up energy is not your thing. Process, planning, and risk management sound like things that happen to other people. You\u2019d rather move fast and deal with the consequences than spend another hour in a review meeting.",
+  },
+};
+
+function getTieredDescription(type: Archetype, pct: number): string {
+  const tier = TIERED_DESCRIPTIONS[type];
+  if (pct >= 30) return tier.high;
+  if (pct >= 15) return tier.mid;
+  return tier.low;
+}
+
+function tieKey(types: Archetype[]): string {
+  return [...types].sort().join("+");
+}
+
+const TIE_DESCRIPTIONS: Record<string, string> = {
+  // 2-way ties
+  [tieKey(["slop", "infra"])]:
+    "You ship fast and somehow nothing breaks. You\u2019re the rare person who can hack together a prototype at 2am and then wake up the next morning to write the monitoring for it. You move at dangerous speed, but you\u2019ve also built the guardrails. Terrifying, honestly.",
+  [tieKey(["slop", "hot"])]:
+    "You\u2019re the person who builds the demo and then sells it in the same meeting. You move fast, you talk faster, and people somehow love you for it. Half the company thinks you\u2019re a genius, the other half has no idea what you actually do. Both are correct.",
+  [tieKey(["slop", "grown"])]:
+    "You ship at full speed but somehow always know when to pump the brakes. You\u2019ve got a side project for every day of the week and a spreadsheet tracking all of them. You\u2019re chaotic, but it\u2019s an organized chaos\u2014the most dangerous kind.",
+  [tieKey(["infra", "hot"])]:
+    "You\u2019re the person who explains the outage to the customer and somehow makes them feel better about it. You know where the bodies are buried and you deliver the news with grace. People trust you with both the systems and the relationships, which is an unreasonable amount of trust that you somehow deserve.",
+  [tieKey(["infra", "grown"])]:
+    "You are the reason the company will still exist in five years. You watch the dashboards and the budget. You read the postmortems and the quarterly reports. Everyone else is building the plane mid-flight and you\u2019re the one who remembered to check if there\u2019s fuel.",
+  [tieKey(["hot", "grown"])]:
+    "You\u2019re the person who can charm a room and then quietly reorganize the entire project plan afterward. You make people feel heard and then make sure what they said actually gets done. Half therapist, half project manager, fully indispensable.",
+
+  // 3-way ties
+  [tieKey(["slop", "infra", "hot"])]:
+    "You build it, you keep it running, and you make everyone feel great about it. You\u2019re basically three people in a trenchcoat and somehow none of them are dropping the ball. The company would collapse without you but you\u2019d never say that out loud.",
+  [tieKey(["slop", "infra", "grown"])]:
+    "You ship fast, build it right, and know when to say no. You\u2019re the full stack of organizational competence\u2014equal parts chaos and control. Your coworkers can\u2019t figure out if you\u2019re a cowboy or a bureaucrat. The answer is yes.",
+  [tieKey(["slop", "hot", "grown"])]:
+    "You move fast, look good doing it, and somehow still remember to file the paperwork. You\u2019re the person who improvises a demo for a customer, nails it, and then sends a follow-up email with action items. Unhinged and professional in equal measure.",
+  [tieKey(["infra", "hot", "grown"])]:
+    "You\u2019re the steady hand that keeps everything and everyone together. You maintain the systems, manage the relationships, and make sure the trains run on time. You don\u2019t ship fast\u2014you ship right. And then you send a very nice Slack message about it.",
+
+  // 4-way tie
+  [tieKey(["slop", "infra", "hot", "grown"])]:
+    "You are somehow all four jobs at once. You ship fast, keep things running, make people feel great, and still find time to ask \u201Cbut should we?\u201D You are either the most versatile person at your company or you just refuse to answer a personality quiz honestly. Either way, respect.",
+};
+
+function wrapText(ctx: CanvasRenderingContext2D, text: string, maxWidth: number): string[] {
+  const words = text.split(" ");
+  const lines: string[] = [];
+  let line = "";
+  for (const word of words) {
+    const test = line ? `${line} ${word}` : word;
+    if (ctx.measureText(test).width > maxWidth && line) {
+      lines.push(line);
+      line = word;
+    } else {
+      line = test;
+    }
+  }
+  if (line) lines.push(line);
+  return lines;
+}
+
+function generateResultImage(
+  winner: Archetype,
+  isTie: boolean,
+  tiedWith: Archetype[],
+  scores: Record<Archetype, number>,
+): Promise<Blob> {
+  const W = 540;
+  const H = 960;
+  const pad = 48;
+  const contentW = W - pad * 2;
+  const info = ARCHETYPE_INFO[winner];
+  const description = isTie ? TIE_DESCRIPTIONS[tieKey(tiedWith)] : info.description;
+  const total = Object.values(scores).reduce((a, b) => a + b, 0);
+  const sorted = (Object.entries(scores) as [Archetype, number][]).sort((a, b) => b[1] - a[1]);
+
+  const probe = document.createElement("canvas").getContext("2d")!;
+  probe.font = '14px "Special Elite", "Courier New", monospace';
+  const descLines = wrapText(probe, description, contentW);
+
+  probe.font = '12px "Special Elite", "Courier New", monospace';
+  const archetypeBlocks = sorted.map(([type, count]) => {
+    const pct = total > 0 ? Math.round((count / total) * 100) : 0;
+    const text = getTieredDescription(type as Archetype, pct);
+    const lines = wrapText(probe, text, contentW - 12);
+    return { type: type as Archetype, pct, lines };
+  });
+  const breakdownH = archetypeBlocks.reduce((h, b) => h + 22 + b.lines.length * 16 + 16, 0);
+  const barSectionH = sorted.length * 36;
+  const contentH = 40 + 28 + 56 + (isTie ? 28 : 0) + 20 + descLines.length * 21
+    + 28 + barSectionH + 20 + 1 + 20 + breakdownH + 4 + 18 + 18;
+  const topPad = Math.max(40, Math.floor((H - contentH) / 2));
+
+  const canvas = document.createElement("canvas");
+  const dpr = 2;
+  canvas.width = W * dpr;
+  canvas.height = H * dpr;
+  const ctx = canvas.getContext("2d")!;
+  ctx.scale(dpr, dpr);
+
+  ctx.fillStyle = "#faf8f5";
+  ctx.fillRect(0, 0, W, H);
+
+  const orbColor = info.color;
+  const orbs = [
+    { x: W * 0.2, y: H * 0.1, r: 180, opacity: 0.10 },
+    { x: W * 0.8, y: H * 0.25, r: 150, opacity: 0.08 },
+    { x: W * 0.5, y: H * 0.55, r: 200, opacity: 0.06 },
+    { x: W * 0.15, y: H * 0.75, r: 120, opacity: 0.05 },
+  ];
+  for (const orb of orbs) {
+    const grad = ctx.createRadialGradient(orb.x, orb.y, 0, orb.x, orb.y, orb.r);
+    grad.addColorStop(0, orbColor + Math.round(orb.opacity * 255).toString(16).padStart(2, "0"));
+    grad.addColorStop(1, orbColor + "00");
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, W, H);
+  }
+
+  let y = topPad;
+
+  ctx.font = '10px "Special Elite", "Courier New", monospace';
+  ctx.fillStyle = "#999";
+  ctx.textAlign = "center";
+  ctx.letterSpacing = "3px";
+  ctx.fillText("THE ONLY 4 JOBS THAT WILL SURVIVE AT TECH COMPANIES", W / 2, y);
+  y += 40;
+
+  ctx.letterSpacing = "5px";
+  ctx.font = '10px "Special Elite", "Courier New", monospace';
+  ctx.fillStyle = "#888";
+  const articleText = info.article ? ` ${info.article.toUpperCase()}` : "";
+  ctx.fillText(`YOU ARE${articleText}`, W / 2, y);
+  y += 12;
+
+  ctx.letterSpacing = "0px";
+  ctx.font = '44px "DM Serif Display", Georgia, serif';
+  ctx.fillStyle = info.color;
+  ctx.fillText(info.name, W / 2, y + 40);
+  y += 56;
+
+  if (isTie) {
+    ctx.font = '10px "Special Elite", "Courier New", monospace';
+    ctx.fillStyle = "#888";
+    ctx.letterSpacing = "2px";
+    const tieNames = tiedWith
+      .filter((t) => t !== winner)
+      .map((t) => ARCHETYPE_INFO[t].name)
+      .join(" & ");
+    ctx.fillText(`TIED WITH ${tieNames.toUpperCase()}`, W / 2, y);
+    ctx.letterSpacing = "0px";
+    y += 28;
+  }
+
+  y += 20;
+  ctx.font = '14px "Special Elite", "Courier New", monospace';
+  ctx.fillStyle = "#6b6b6b";
+  ctx.textAlign = "center";
+  for (const line of descLines) {
+    ctx.fillText(line, W / 2, y);
+    y += 21;
+  }
+
+  // score bars
+  y += 28;
+  ctx.textAlign = "left";
+  for (const [type, count] of sorted) {
+    const pct = total > 0 ? Math.round((count / total) * 100) : 0;
+    const ai = ARCHETYPE_INFO[type];
+
+    ctx.font = '12px "Special Elite", "Courier New", monospace';
+    ctx.fillStyle = "#0a0a0a";
+    ctx.fillText(ai.name, pad, y + 8);
+
+    ctx.textAlign = "right";
+    ctx.fillStyle = "#6b6b6b";
+    ctx.fillText(`${pct}%`, W - pad, y + 8);
+    ctx.textAlign = "left";
+
+    y += 15;
+    ctx.fillStyle = "rgba(0,0,0,0.06)";
+    ctx.fillRect(pad, y, contentW, 5);
+    ctx.fillStyle = ai.color;
+    ctx.fillRect(pad, y, contentW * (pct / 100), 5);
+    y += 21;
+  }
+
+  // archetype breakdown descriptions
+  y += 20;
+  ctx.fillStyle = "rgba(0,0,0,0.08)";
+  ctx.fillRect(pad, y, contentW, 1);
+  y += 20;
+
+  for (const block of archetypeBlocks) {
+    const ai = ARCHETYPE_INFO[block.type];
+
+    ctx.font = 'bold 11px "Special Elite", "Courier New", monospace';
+    ctx.fillStyle = ai.color;
+    ctx.textAlign = "left";
+    ctx.letterSpacing = "1px";
+    ctx.fillText(`${ai.name.toUpperCase()}  \u2014  ${block.pct}%`, pad, y);
+    ctx.letterSpacing = "0px";
+    y += 18;
+
+    ctx.font = '12px "Special Elite", "Courier New", monospace';
+    ctx.fillStyle = "#888";
+    for (const line of block.lines) {
+      ctx.fillText(line, pad, y);
+      y += 16;
+    }
+    y += 16;
+  }
+
+  // CTA
+  y += 4;
+  ctx.textAlign = "center";
+  ctx.font = 'bold 13px "Special Elite", "Courier New", monospace';
+  ctx.fillStyle = info.color;
+  ctx.letterSpacing = "1px";
+  ctx.fillText("Find out which job will be yours \u2192", W / 2, y);
+  y += 18;
+  ctx.font = '11px "Special Elite", "Courier New", monospace';
+  ctx.fillStyle = "#999";
+  ctx.letterSpacing = "2px";
+  ctx.fillText("four-jobs-quiz.vercel.app", W / 2, y);
+
+  return new Promise((resolve) => {
+    canvas.toBlob((blob) => resolve(blob!), "image/png");
+  });
+}
 
 const ALL_COLORS = ["#FF6B2B", "#00B4D8", "#E91E8C", "#7B61FF", "#FFD600", "#00E676", "#FF1744", "#00BFA5"];
 
@@ -280,42 +534,115 @@ function AnswerCard({
 
 // ─── Result Breakdown ────────────────────────────────────────────────────────
 
+function InfoModal({ info, pct, description, onClose }: {
+  info: { name: string; article: string; color: string };
+  pct: number;
+  description: string;
+  onClose: () => void;
+}) {
+  return (
+    <div
+      className="fixed inset-0 flex items-center justify-center px-6"
+      style={{ zIndex: 100 }}
+      onClick={onClose}
+    >
+      <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" />
+      <div
+        className="relative max-w-sm w-full animate-scale-in"
+        style={{
+          background: 'var(--background)',
+          border: `1px solid var(--card-border)`,
+          padding: '28px 24px',
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <button
+          onClick={onClose}
+          className="absolute top-3 right-3 w-7 h-7 flex items-center justify-center cursor-pointer text-sm"
+          style={{ color: 'var(--muted)' }}
+        >
+          ✕
+        </button>
+        <div className="text-center mb-3">
+          <p
+            className="text-xs tracking-[0.2em] uppercase font-medium"
+            style={{ color: info.color }}
+          >
+            {info.article ? `${info.article} ` : ""}{info.name}
+          </p>
+          <span className="text-xl font-light mt-1 block" style={{ color: info.color }}>{pct}%</span>
+        </div>
+        <p
+          className="text-[14px] leading-[1.7]"
+          style={{ color: 'var(--muted)' }}
+        >
+          {description}
+        </p>
+      </div>
+    </div>
+  );
+}
+
 function ResultBreakdown({ scores }: { scores: Record<Archetype, number> }) {
   const total = Object.values(scores).reduce((a, b) => a + b, 0);
   const sorted = (Object.entries(scores) as [Archetype, number][]).sort((a, b) => b[1] - a[1]);
+  const [modalType, setModalType] = useState<Archetype | null>(null);
 
   return (
-    <div className="w-full max-w-sm space-y-4">
-      {sorted.map(([type, count], i) => {
-        const pct = total > 0 ? Math.round((count / total) * 100) : 0;
-        const info = ARCHETYPE_INFO[type];
+    <>
+      <div className="w-full max-w-sm space-y-4 text-left">
+        {sorted.map(([type, count], i) => {
+          const pct = total > 0 ? Math.round((count / total) * 100) : 0;
+          const info = ARCHETYPE_INFO[type];
+          return (
+            <div
+              key={type}
+              className="animate-fade-up"
+              style={{ animationDelay: `${400 + i * 100}ms`, animationFillMode: 'both' }}
+            >
+              <div className="flex items-center mb-1.5">
+                <span className="text-sm font-medium">{info.name}</span>
+                <button
+                  onClick={() => setModalType(type as Archetype)}
+                  className="ml-1.5 cursor-pointer shrink-0 transition-colors duration-150"
+                  style={{
+                    fontSize: '12px',
+                    color: 'var(--muted)',
+                  }}
+                  aria-label={`Read more about ${info.name}`}
+                >
+                  ›
+                </button>
+                <span className="ml-auto text-sm font-light tabular-nums" style={{ color: 'var(--muted)' }}>
+                  {pct}%
+                </span>
+              </div>
+              <div className="w-full h-[6px] overflow-hidden" style={{ backgroundColor: 'var(--progress-bg)' }}>
+                <div
+                  className="h-full transition-all duration-700 ease-out"
+                  style={{
+                    backgroundColor: info.color,
+                    width: `${pct}%`,
+                    transitionDelay: `${600 + i * 100}ms`,
+                  }}
+                />
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      {modalType && (() => {
+        const modalPct = total > 0 ? Math.round((scores[modalType] / total) * 100) : 0;
         return (
-          <div
-            key={type}
-            className="animate-fade-up"
-            style={{ animationDelay: `${400 + i * 100}ms`, animationFillMode: 'both' }}
-          >
-            <div className="flex items-center gap-3 mb-1.5">
-              <div style={{ width: 10, height: 10, backgroundColor: info.color, flexShrink: 0 }} />
-              <span className="text-sm font-medium flex-1">{info.name}</span>
-              <span className="text-sm font-light tabular-nums" style={{ color: 'var(--muted)' }}>
-                {pct}%
-              </span>
-            </div>
-            <div className="w-full h-[6px] overflow-hidden ml-[22px]" style={{ maxWidth: 'calc(100% - 22px)', backgroundColor: 'var(--progress-bg)' }}>
-              <div
-                className="h-full transition-all duration-700 ease-out"
-                style={{
-                  backgroundColor: info.color,
-                  width: `${pct}%`,
-                  transitionDelay: `${600 + i * 100}ms`,
-                }}
-              />
-            </div>
-          </div>
+          <InfoModal
+            info={ARCHETYPE_INFO[modalType]}
+            pct={modalPct}
+            description={getTieredDescription(modalType, modalPct)}
+            onClose={() => setModalType(null)}
+          />
         );
-      })}
-    </div>
+      })()}
+    </>
   );
 }
 
@@ -381,32 +708,39 @@ export default function Quiz() {
     return { winner, isTie: winners.length > 1, tiedWith: winners.map(([t]) => t) };
   }, [scores]);
 
-  const copyResults = useCallback(() => {
-    const info = ARCHETYPE_INFO[result.winner];
-    const total = Object.values(scores).reduce((a, b) => a + b, 0);
-    const breakdown = (Object.entries(scores) as [Archetype, number][])
-      .sort((a, b) => b[1] - a[1])
-      .map(([t, c]) => `${ARCHETYPE_INFO[t].name}: ${Math.round((c / total) * 100)}%`)
-      .join("\n");
-    const tieNote = result.isTie
-      ? `\n(Tied with ${result.tiedWith.filter((t) => t !== result.winner).map((t) => ARCHETYPE_INFO[t].name).join(" & ")})`
-      : "";
-    const text = `I just took "The Only 4 Jobs That Will Survive at Tech Companies" quiz and got: ${info.name}${tieNote}\n\n${breakdown}\n\nTake the quiz: ${window.location.origin}`;
-    navigator.clipboard.writeText(text).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    }).catch(() => {
-      const textarea = document.createElement("textarea");
-      textarea.value = text;
-      textarea.style.position = "fixed";
-      textarea.style.opacity = "0";
-      document.body.appendChild(textarea);
-      textarea.select();
-      document.execCommand("copy");
-      document.body.removeChild(textarea);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    });
+  const copyResults = useCallback(async () => {
+    const { winner, isTie, tiedWith } = result;
+    const blob = await generateResultImage(winner, isTie, tiedWith, scores);
+
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "quiz-result.png";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+
+    const linkText = "Take the quiz: https://four-jobs-quiz.vercel.app";
+    try {
+      await navigator.clipboard.write([
+        new ClipboardItem({
+          "image/png": blob,
+          "text/plain": new Blob([linkText], { type: "text/plain" }),
+        }),
+      ]);
+    } catch {
+      try {
+        await navigator.clipboard.writeText(linkText);
+      } catch {
+        // fallback: download still works
+      }
+    }
+
+    setCopied(true);
+    setTimeout(() => {
+      setCopied(false);
+      URL.revokeObjectURL(url);
+    }, 2500);
   }, [result, scores]);
 
   // ─── Intro Screen ──────────────────────────────────────────────────────────
@@ -478,7 +812,7 @@ export default function Quiz() {
               className="text-xs tracking-[0.25em] uppercase mb-3 font-medium animate-fade-up"
               style={{ color: 'var(--muted)', animationDelay: '200ms', animationFillMode: 'both' }}
             >
-              You are
+              You are{info.article ? ` ${info.article}` : ""}
             </p>
 
             <h1
@@ -505,7 +839,7 @@ export default function Quiz() {
               className="text-[15px] font-light leading-[1.7] mb-10 max-w-md animate-fade-up"
               style={{ color: 'var(--muted)', animationDelay: '500ms', animationFillMode: 'both' }}
             >
-              {info.description}
+              {isTie ? TIE_DESCRIPTIONS[tieKey(tiedWith)] : info.description}
             </p>
 
             <ResultBreakdown scores={scores} />
@@ -520,7 +854,7 @@ export default function Quiz() {
                            transition-all duration-200 hover:-translate-y-0.5 active:scale-[0.98]"
                 style={{ background: 'var(--foreground)', color: 'var(--background)' }}
               >
-                {copied ? "Copied" : "Share Results"}
+                {copied ? "Copied + Saved" : "Share Results"}
               </button>
               <button
                 onClick={retake}
